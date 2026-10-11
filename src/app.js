@@ -7,6 +7,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Routes
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
 // Health Check Route
 app.get('/api', (req, res) => {
   res.status(200).json({ message: "Hospital Booking API is running" });
