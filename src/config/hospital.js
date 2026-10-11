@@ -1,8 +1,31 @@
-module.exports = {
-  name: "Group 6 General Hospital",
-  timezone: "Africa/Lagos",
+const hospitalSchedule = {
+  days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
   openingTime: "08:00",
-  closingTime: "15:00",
+  closingTime: "14:00",
   slotDurationMinutes: 30,
-  workingDays: [1, 2, 3, 4, 5]
+
+  publicHolidays: [
+    {
+      date: "2026-10-01",
+      name: "Independence Day"
+    },
+    {
+      date: "2026-12-25",
+      name: "Christmas Day"
+    },
+    {
+      date: "2026-12-26",
+      name: "Boxing Day"
+    },
+    {
+      date: "2026-01-01",
+      name: "New Year's Day"
+    },
+    {
+      date: "2026-06-12",
+      name: "Democracy Day"
+    }
+  ]
 };
+
+module.exports = hospitalSchedule;

@@ -1,18 +1,28 @@
-const express = require('express');
-const cors = require('cors');
-
+const express = require("express");
+const errorMiddleware = require("./middleware/errorMiddleware");
+console.log("authRoutes:", typeof require("./routes/authRoutes"));
+console.log("doctorRoutes:", typeof require("./routes/doctorRoutes"));
+console.log("appointmentRoutes:", typeof require("./routes/appointmentRoutes"));
+console.log("scheduleRoutes:", typeof require("./routes/scheduleRoutes"));
 const app = express();
 
-// Middleware
 app.use(express.json());
-app.use(cors());
 
-// Routes
-const authRoutes = require('./routes/authRoutes');
-app.use('/api/auth', authRoutes);
-// Health Check Route
-app.get('/api', (req, res) => {
-  res.status(200).json({ message: "Hospital Booking API is running" });
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    service: "hospital-appointment-booking"
+  });
 });
+
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/doctors", require("./routes/doctorRoutes"));
+app.use("/api/appointments", require("./routes/appointmentRoutes"));
+app.use("/api/schedules", require("./routes/scheduleRoutes"));
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found." });
+});
+
+app.use(errorMiddleware);
 
 module.exports = app;
