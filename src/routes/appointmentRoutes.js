@@ -1,26 +1,35 @@
-import express from 'express';
-import { 
-  createAppointment, 
-  getMyAppointments, 
-  getAppointmentById, 
-  cancelAppointment, 
-  rescheduleAppointment 
-} from '../controllers/appointmentController.js';
-import protect from '../middleware/authMiddleware.js'; // Protects routes with user authentication
+
+const express = require("express");
+
+const {
+  createAppointment,
+  getMyAppointments,
+  getAppointmentById,
+  cancelAppointment,
+  rescheduleAppointment,
+} = require("../controllers/appointmentController");
+
+const protect = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// Apply auth middleware to all appointment routes
+// Protect all appointment routes
 router.use(protect);
 
-router.route('/')
-  .post(createAppointment)       // POST /api/appointments - Book appointment
-  .get(getMyAppointments);       // GET /api/appointments - View user appointments
+// POST /api/appointments - Book appointment
+// GET  /api/appointments - View logged-in user's appointments
+router
+  .route("/")
+  .post(createAppointment)
+  .get(getMyAppointments);
 
-router.route('/:id')
-  .get(getAppointmentById);      // GET /api/appointments/:id - View single appointment
+// GET /api/appointments/:id - View one appointment
+router.route("/:id").get(getAppointmentById);
 
-router.patch('/:id/cancel', cancelAppointment);          // PATCH /api/appointments/:id/cancel - Cancel
-router.patch('/:id/reschedule', rescheduleAppointment);    // PATCH /api/appointments/:id/reschedule - Reschedule
+// PATCH /api/appointments/:id/cancel - Cancel appointment
+router.patch("/:id/cancel", cancelAppointment);
 
-export default router;
+// PATCH /api/appointments/:id/reschedule - Reschedule appointment
+router.patch("/:id/reschedule", rescheduleAppointment);
+
+module.exports = router;

@@ -1,44 +1,47 @@
-import Appointment from '../models/appointmentModel.js';
+const Appointment = require('../models/Appointment');
 
-// description: Book an appointment
-// route: POST /api/appointments
-//private access
-export const createAppointment = async (req, res) => {
+// @desc    Book an appointment
+// @route   POST /api/appointments
+// @access  Private
+ const createAppointment = async (req, res) => {
     try {
-        const { doctore, date, startTime, endTime, reason } = req.body;
+        const { doctor, date, startTime, endTime, reason } = req.body;
         const patientId = req.user._id;
-        //check if doctor is already booked for the exact day and time
+
+        // Check whether the doctor is already booked for this date and time
         const existingBooking = await Appointment.findOne({
             doctor,
             date,
             startTime,
-            status: { $ne: 'cancelled'} //Ignore cancelled appointments
+            status: { $ne: 'cancelled' }
         });
 
         if (existingBooking) {
-            return res.status(404).json({
+            return res.status(400).json({
                 success: false,
                 message: 'This doctor is already booked for this time slot'
             });
         }
-        //Create and save appointments
+
+        // Create and save the appointment
         const appointment = await Appointment.create({
-        patient: patientId,
-        doctor,
-        date,
-        startTime,
-        endTime,
-        reason,
-        status: 'confirmed'
+            patient: patientId,
+            doctor,
+            date,
+            startTime,
+            endTime,
+            reason,
+            status: 'confirmed'
         });
 
-    res.status(201).json({
-            success: false,
-            message: 'Server Error',
-            error: error.message
+        return res.status(201).json({
+            success: true,
+            message: 'Appointment booked successfully',
+            data: appointment
         });
+
     } catch (error) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Server Error',
             error: error.message
@@ -46,52 +49,79 @@ export const createAppointment = async (req, res) => {
     }
 };
 
-//view appointments belonging to user
-//route: GET /api/appointments/my-appointments
-//private access
 
-export const getMyAppointments = async (req, res) => {
+// @desc    Get appointments belonging to the logged-in patient
+// @route   GET /api/appointments/my-appointments
+// @access  Private
+const getMyAppointments = async (req, res) => {
     try {
-        const appointments = await Appointment.find({ patient: req.user._id }).populate('doctor', 'name specialization');
-        res.status(200).json({
+        const appointments = await Appointment.find({
+            patient: req.user._id
+        }).populate('doctor', 'name specialization');
+
+        return res.status(200).json({
             success: true,
             count: appointments.length,
             data: appointments
         });
-    }catch (error) {
-        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            error: error.message
+        });
     }
 };
 
-//cancel an appointment
-//route: PATCH /api/appointments/:id/cancel
-//private access
-export const cancelAppointment = async (req, res) => {
-    try{
+
+// @desc    Cancel an appointment
+// @route   PATCH /api/appointments/:id/cancel
+// @access  Private
+const cancelAppointment = async (req, res) => {
+    try {
         const appointment = await Appointment.findOne({
             _id: req.params.id,
-            patirnt: req.user._id
+            patient: req.user._id
         });
+
         if (!appointment) {
-            return res.status(404).json({ success: false, message: 'Appointment not found' });
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment not found'
+            });
         }
+
+        if (appointment.status === 'cancelled') {
+            return res.status(400).json({
+                success: false,
+                message: 'This appointment has already been cancelled'
+            });
+        }
+
         appointment.status = 'cancelled';
         await appointment.save();
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: 'Appointment cancelled successfully',
-            data: Appointment
+            data: appointment
         });
+
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
-        }
+        return res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            error: error.message
+        });
+    }
 };
 
-//Reschedule an appointment
-//route PATCH /api/appointments/:id/reschedule
-//private access
-export const rescheduleAppointment = async (req, res) => {
+
+// @desc    Reschedule an appointment
+// @route   PATCH /api/appointments/:id/reschedule
+// @access  Private
+const rescheduleAppointment = async (req, res) => {
     try {
         const { date, startTime, endTime } = req.body;
         const appointmentId = req.params.id;
@@ -101,41 +131,64 @@ export const rescheduleAppointment = async (req, res) => {
             patient: req.user._id
         });
 
-        if(!appointment) {
-            return res.status(404).json({ success: false, message: 'Appointment not found '});
+        if (!appointment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment not found'
+            });
         }
 
-        // Check if the new slot is already booked for that doctor
-    if (date && startTime) {
-      const existingBooking = await Appointment.findOne({
-        doctor: appointment.doctor,
-        date,
-        startTime,
-        status: { $ne: 'cancelled' },
-        _id: { $ne: appointmentId }
-      });
+        if (appointment.status === 'cancelled') {
+            return res.status(400).json({
+                success: false,
+                message: 'A cancelled appointment cannot be rescheduled'
+            });
+        }
 
-      if (existingBooking) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'This doctor is already booked for the new time slot.' 
+        const newDate = date || appointment.date;
+        const newStartTime = startTime || appointment.startTime;
+        const newEndTime = endTime || appointment.endTime;
+
+        // Check whether the new time slot conflicts with another booking
+        const existingBooking = await Appointment.findOne({
+            doctor: appointment.doctor,
+            date: newDate,
+            startTime: newStartTime,
+            status: { $nin: ['cancelled'] },
+            _id: { $ne: appointmentId }
         });
-      }
+
+        if (existingBooking) {
+            return res.status(400).json({
+                success: false,
+                message: 'This doctor is already booked for the new time slot'
+            });
+        }
+
+        appointment.date = newDate;
+        appointment.startTime = newStartTime;
+        appointment.endTime = newEndTime;
+        appointment.status = 'rescheduled';
+
+        await appointment.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Appointment rescheduled successfully',
+            data: appointment
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            error: error.message
+        });
     }
-
-    appointment.date = date || appointment.date;
-    appointment.startTime = startTime || appointment.startTime;
-    appointment.endTime = endTime || appointment.endTime;
-    appointment.status = 'rescheduled';
-
-    await appointment.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Appointment rescheduled successfully',
-      data: appointment
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
-  }
+};
+module.exports = {
+    createAppointment,
+    getMyAppointments,
+    cancelAppointment,
+    rescheduleAppointment
 };

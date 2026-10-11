@@ -1,5 +1,4 @@
-import mongoose from 'mongoose';
-
+const mongoose = require('mongoose');
 const appointmentSchema = new mongoose.Schema({
     patient: {
         type: mongoose.Schema.Types.ObjectId,
@@ -34,5 +33,7 @@ const appointmentSchema = new mongoose.Schema({
     }
 }, { timestamps: true});
 
+appointmentSchema.index({ doctor: 1, date: 1, startTime: 1 }, { unique: true, partialFilterExpression: { status:'confirmed' } } );
+
 const Appointment = mongoose.model('Appointment', appointmentSchema);
-export default Appointment;
+module.exports = Appointment;
