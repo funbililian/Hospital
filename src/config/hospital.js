@@ -1,4 +1,6 @@
 const hospitalSchedule = {
+  name: "Hospital Appointment Booking",
+  timezone: "Africa/Lagos",
   days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
   openingTime: "08:00",
   closingTime: "14:00",

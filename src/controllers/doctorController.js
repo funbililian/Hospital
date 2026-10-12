@@ -1,4 +1,6 @@
-const doctors = require("../config/doctors");
+
+const mongoose = require("mongoose");
+const Doctor = require("../models/Doctor");
 const hospital = require("../config/hospital");
 
 const {
@@ -7,36 +9,61 @@ const {
 } = require("../utils/availability");
 
 // GET /api/doctors
-exports.listDoctors = (req, res) => {
-  res.status(200).json({
-    hospital: hospital.name,
-    count: doctors.length,
-    doctors
-  });
+// Retrieve all doctors from MongoDB
+exports.listDoctors = async (req, res, next) => {
+  try {
+    const doctors = await Doctor.find().sort({ name: 1 });
+
+    return res.status(200).json({
+      hospital: hospital.name,
+      count: doctors.length,
+      doctors
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 // GET /api/doctors/:id
-exports.getDoctor = (req, res) => {
-  const doctor = doctors.find(
-    (item) => item.id === req.params.id
-  );
+// Retrieve one doctor using their MongoDB ObjectId
+exports.getDoctor = async (req, res, next) => {
+  try {
+    const { id } = req.params;
 
-  if (!doctor) {
-    return res.status(404).json({
-      message: "Doctor not found."
-    });
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        message: "Invalid doctor ID."
+      });
+    }
+
+    const doctor = await Doctor.findById(id);
+
+    if (!doctor) {
+      return res.status(404).json({
+        message: "Doctor not found."
+      });
+    }
+
+    return res.status(200).json({ doctor });
+  } catch (error) {
+    next(error);
   }
-
-  return res.status(200).json({ doctor });
 };
 
 // GET /api/doctors/:id/availability?date=YYYY-MM-DD
+// Retrieve available appointment slots for a doctor
 exports.getDoctorAvailability = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { date } = req.query;
 
-    const doctor = doctors.find((item) => item.id === id);
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        message: "Invalid doctor ID."
+      });
+    }
+
+    const doctor = await Doctor.findById(id);
 
     if (!doctor) {
       return res.status(404).json({
@@ -50,7 +77,13 @@ exports.getDoctorAvailability = async (req, res, next) => {
       });
     }
 
-    const slots = await getAvailableSlots(id, date);
+    const slots = await getAvailableSlots(doctor._id, date);
+
+    if (slots === null) {
+      return res.status(404).json({
+        message: "Unable to retrieve availability for this doctor."
+      });
+    }
 
     return res.status(200).json({
       doctor,
@@ -67,17 +100,12 @@ exports.getDoctorAvailability = async (req, res, next) => {
 };
 
 // GET /api/schedules
+// Retrieve the hospital's appointment schedule
 exports.getHospitalSchedule = (req, res) => {
   return res.status(200).json({
     hospital: hospital.name,
     timezone: hospital.timezone,
-    workingDays: [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday"
-    ],
+    workingDays: hospital.days,
     openingTime: hospital.openingTime,
     closingTime: hospital.closingTime,
     slotDurationMinutes: hospital.slotDurationMinutes

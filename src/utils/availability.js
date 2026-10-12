@@ -1,5 +1,5 @@
 const hospital = require("../config/hospital");
-const doctors = require("../config/doctors");
+const Doctor = require("../models/Doctor");
 const Appointment = require("../models/Appointment");
 
 function parseDate(dateString) {
@@ -50,7 +50,20 @@ function getLagosTime() {
 }
 
 function isWorkingDay(date) {
-  return hospital.workingDays.includes(date.getUTCDay());
+  const weekdayNames = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday"
+  ];
+
+  const dayName = weekdayNames[date.getUTCDay()];
+  const workingDays = hospital.days || hospital.workingDays || [];
+
+  return workingDays.includes(dayName);
 }
 
 // NEW: Check whether a date is a public holiday.
@@ -102,7 +115,7 @@ function getAllSlots() {
 }
 
 async function getAvailableSlots(doctorId, dateString) {
-  const doctor = doctors.find((item) => item.id === doctorId);
+  const doctor = await Doctor.findById(doctorId);
   const date = parseDate(dateString);
 
   if (!doctor || !date) {
@@ -124,7 +137,7 @@ async function getAvailableSlots(doctorId, dateString) {
   }
 
   const appointments = await Appointment.find({
-    doctorId,
+    doctor: doctorId,
     date: dateString,
     status: "confirmed"
   }).select("startTime");

@@ -13,8 +13,16 @@ async function startServer() {
 
   await connectDB();
 
-  const Appointment = require("./models/Appointment");
+  const Appointment = require('./models/Appointment');
+console.log(
+    'Appointment model file:',
+    require.resolve('./models/Appointment')
+);
 
+console.log(
+    'Doctor field type:',
+    Appointment.schema.path('doctor').instance
+);
   console.log("Appointment type:", typeof Appointment);
   console.log("Appointment.init type:", typeof Appointment.init);
   console.log("Appointment model name:", Appointment.modelName);

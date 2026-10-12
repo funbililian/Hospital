@@ -4,13 +4,12 @@ const express = require("express");
 const {
   createAppointment,
   getMyAppointments,
-  getAppointmentById,
   cancelAppointment,
   rescheduleAppointment,
+  getAppointmentById
 } = require("../controllers/appointmentController");
 
-const protect = require("../middleware/authMiddleware");
-
+const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
 
 // Protect all appointment routes
