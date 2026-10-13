@@ -139,7 +139,7 @@ async function getAvailableSlots(doctorId, dateString) {
   const appointments = await Appointment.find({
     doctor: doctorId,
     date: dateString,
-    status: "confirmed"
+    status: { $in: ["confirmed", "rescheduled"] }
   }).select("startTime");
 
   const bookedTimes = new Set(
