@@ -271,7 +271,6 @@ Provide the new date and time. Each field may be omitted to keep its current val
 
 The same date, time, holiday, operating-hour, slot-boundary, and conflict checks apply. Cancelled or completed appointments cannot be rescheduled. The current implementation sets the appointment status to `rescheduled` after a successful change.
 
-> **Implementation note:** The availability lookup currently filters booked appointments by `confirmed` status, while rescheduling sets the status to `rescheduled`. This means a rescheduled slot may appear available in the availability response even though booking conflict checks treat it as occupied. Treat this as a known behavior until the status handling is aligned in the application code.
 
 ## Data models
 
