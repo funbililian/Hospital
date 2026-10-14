@@ -1,29 +1,30 @@
+require("dotenv").config({ quiet: true });
 
 const mongoose = require("mongoose");
-const { MongoMemoryServer } = require("mongodb-memory-server");
-
-let mongoServer;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
+  if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI is not configured");
+  }
 
-  const testUri = mongoServer.getUri();
-
-  await mongoose.connect(testUri);
-}, 30000);
+  await mongoose.connect(process.env.MONGODB_URI, {
+    dbName: "hospital_test",
+    serverSelectionTimeoutMS: 10000,
+  });
+}, 15000);
 
 afterEach(async () => {
-  const collections = mongoose.connection.collections;
+  if (mongoose.connection.readyState !== 1) return;
 
-  for (const key of Object.keys(collections)) {
-    await collections[key].deleteMany({});
+  for (const collection of Object.values(
+    mongoose.connection.collections
+  )) {
+    await collection.deleteMany({});
   }
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-
-  if (mongoServer) {
-    await mongoServer.stop();
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
   }
-}, 30000);
+});
